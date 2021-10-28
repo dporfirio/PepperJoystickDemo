@@ -135,7 +135,12 @@ class Behaviors:
 		while True:
 			try:
 				read_s, _, _ = select.select([self.conn], [], [])
-				data_bytes = read_s[0].recv(2048)  # receiving data
+				data_bytes = b''
+				while True:
+					temp = read_s[0].recv(2048)  # receiving data
+					if not temp:
+						break
+					data_bytes += temp
 				data_str = [d for d in data_bytes.decode().split("\n") if len(d) > 0 and d[0] == "{"]
 				data = json.loads(data_str[-1])
 			except:
