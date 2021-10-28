@@ -66,7 +66,7 @@ class Behaviors:
 		self.locked_lock = threading.Lock()
 
 		# display the image!
-		im = Image.open("AWF.png")
+		im = Image.open("img/AWF.png")
 		im.show()
 
 	def signal_handler(self, sig, frame):
