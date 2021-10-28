@@ -24,6 +24,8 @@ You must have a licensed copy of Choregraphe. You must also install the C++ Naoq
 
 ## Running
 
+![Joystick commands](/img/pepper_gamepad.png)
+
 ### Physical Pepper Robot
 
 In one terminal:
