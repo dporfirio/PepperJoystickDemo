@@ -97,10 +97,24 @@ class Client:
             joysticks.append(pygame.joystick.Joystick(i))
             joysticks[-1].init()
             print ("Detected joystick "), joysticks[-1].get_name()
+        print('Listening for commands...')
         while keepPlaying:
             clock.tick(20)
             self.reset_event_ds_buttons()
             for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.unicode == 'w':
+                        print('w')
+                        self.update_event_ds('up', 1)
+                    elif event.unicode == 'a':
+                        print('a')
+                        self.update_event_ds('left', 1)
+                    elif event.unicode == 's':
+                        print('s')
+                        self.update_event_ds('down', 1)
+                    elif event.unicode == 'd':
+                        print('d')
+                        self.update_event_ds('right', 1)
                 if event.type == pygame.JOYAXISMOTION:
                     if event.axis == 1 and event.value > 0:
                         self.update_event_ds("velocity", -1 * event.value if event.value > 0.6 else 0.0)
