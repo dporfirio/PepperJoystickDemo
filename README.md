@@ -14,8 +14,8 @@ Boot the robot and take note of its IP address. On your own machine:
 
 ```
 cd /path/to/PepperJoystickDemo
-scp behaviors.py nao@ROBOT_IP
-scp AWF.png nao@ROBOT_IP
+scp behaviors.py nao@ROBOT_IP:~
+scp AWF.png nao@ROBOT_IP:~
 ```
 
 ### Virtual Pepper Robot
