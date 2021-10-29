@@ -65,6 +65,9 @@ class Behaviors:
 		self.behavior_lock = threading.Lock()
 		self.locked_lock = threading.Lock()
 
+		# latency
+		self.msg_timestamp = None
+
 		# display the image!
 		im = Image.open("img/AWF.png")
 		im.show()
@@ -86,11 +89,23 @@ class Behaviors:
 				self.conn_lock.release()
 				self.s = socket(AF_INET, SOCK_STREAM)
 				self.conn = None
-				thread = threading.Thread(target=self.connect_and_listen)
+				thread = threading.Thread(target=self.connect_and_listen_wrapper)
 				thread.daemon = True		# Daemonize thread
 				thread.start()
 			else:
 				pass
+
+	def connect_and_listen_wrapper(self):
+		"""Wrap everything in a try-except to ensure that any errors cause the robot to stop."""
+		try:
+			self.connect_and_listen()
+		except:
+			self.stop_and_lock()
+			print("Error encountered. Bringing robot to full stop.")
+		self.s.close()
+		self.conn = None
+		print("Connection closed.")
+		self.conn_lock.release()
 
 	def connect_and_listen(self):
 		self.conn_lock.acquire()
@@ -133,11 +148,22 @@ class Behaviors:
 		# OPTIONS
 		# left joy button = breath on/off
 		# right joy button = mute on/off
+		cutoff = b''
 		while True:
 			try:
 				read_s, _, _ = select.select([self.conn], [], [])
-				data_bytes = read_s[0].recv(2048)  # receiving data
-				data_str = [d for d in data_bytes.decode().split("\n") if len(d) > 0 and d[0] == "{" and d[-1] == "}"]
+				msg_timestamp = time.time()
+				if self.msg_timestamp is not None and msg_timestamp - self.msg_timestamp > 0.5:
+					print("High latency detected.")
+					self.msg_timestamp = None
+					break
+				self.msg_timestamp = msg_timestamp
+				data_bytes = cutoff + read_s[0].recv(2048)  # receiving data
+				cutoff = b''
+				all_str = [d for d in data_bytes.decode().split("\n") if len(d) > 0]
+				data_str = [d for d in all_str if d[0] == "{" and d[-1] == "}"]
+				if len(all_str) > 0 and "}" not in all_str[-1] and "{" in all_str[-1]:
+					cutoff = all_str[-1]
 				data = json.loads(data_str[-1])
 			except:
 				print("Error encountered when receiving data.")
@@ -146,11 +172,6 @@ class Behaviors:
 			thread = threading.Thread(target=self.behavior_decider, args=(data,))
 			thread.daemon = True		# Daemonize thread
 			thread.start()	
-
-		self.s.close()
-		self.conn = None
-		print("Connection closed.")
-		self.conn_lock.release()
 
 	def behavior_decider(self, ev):
 		# return if locked
