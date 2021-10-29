@@ -100,8 +100,8 @@ class Behaviors:
 		try:
 			self.connect_and_listen()
 		except:
-			self.stop_and_lock()
 			print("Error encountered. Bringing robot to full stop.")
+		self.stop_and_lock()
 		self.s.close()
 		self.conn = None
 		print("Connection closed.")
@@ -153,7 +153,7 @@ class Behaviors:
 			try:
 				read_s, _, _ = select.select([self.conn], [], [])
 				msg_timestamp = time.time()
-				if self.msg_timestamp is not None and msg_timestamp - self.msg_timestamp > 0.5:
+				if self.msg_timestamp is not None and msg_timestamp - self.msg_timestamp > 2.0:
 					print("High latency detected.")
 					self.msg_timestamp = None
 					break
@@ -176,7 +176,8 @@ class Behaviors:
 	def behavior_decider(self, ev):
 		# return if locked
 		if self.is_locked():
-			print("Behavior execution not possible while locked.")
+			if ev["start"]:
+				self.unlock()
 			return
 
 		# ignore behavior commands if resting
@@ -196,14 +197,12 @@ class Behaviors:
 			# ALWAYS update the velocity, twist, and emergency stop/lock/unlock
 			forward = ev["velocity"] * 0.4
 			twist = ev["twist"] * 0.6
+			print(forward)
 			stop_and_lock = ev["info"]
-			unlock = ev["start"]
 			self.locomote(forward, twist)
 			if stop_and_lock:
 				self.stop_and_lock()
 				return
-			elif unlock:
-				self.unlock()
 
 			if self.behavior_lock.acquire(False):  # non-blocking
 				# ALWAYS respond to option toggling requests
@@ -268,6 +267,7 @@ class Behaviors:
 		self.locked_lock.release()
 
 	def unlock(self):
+		print("unlocking robot...")
 		self.locked_lock.acquire()
 		self.locked = False
 		self.locked_lock.release()
@@ -283,11 +283,11 @@ class Behaviors:
 
 	def say_whats_next(self):
 		self.posture({"position": "Welcoming", "duration": 2.5})
-		self.say({"speech": "What next?", "volume": 100, "pitch": 50, "speed": 50, "animation": "None"})
+		self.say({"speech": "What \\emph=1\\\\vct=130\\next?", "volume": 200, "pitch": 100, "speed": 75, "animation": "None"})
 		self.posture({"position": "Standing", "duration": 2.5})
 
 	def thank_you(self):
-		self.say({"speech": "Thank you for seeing the potential in robots like me.", "volume": 100, "pitch": 50, "speed": 50, "animation": "Bowing"})
+		self.say({"speech": "Thank you for seeing the potential in robots like me.", "volume": 200, "pitch": 100, "speed": 80, "animation": "Bowing"})
 
 	def motion_aloha(self):
 		thread = threading.Thread(target=self.head_animation)
@@ -521,25 +521,28 @@ class Behaviors:
 		print("Finished head animation.")
 
 	def wave_animation(self):
-		print("Setting up wave behavior...")
-		start_time = time.time()
-		time_elapsed = 0.0
-		names = ["LWristYaw", "LShoulderRoll", "LShoulderPitch", "LElbowRoll", "LElbowYaw", "LHand"]
-		angles = [math.radians(62.1), math.radians(30.9), math.radians(-22.9), math.radians(-52.4), math.radians(-73.1), 0.98]
-		time_ip, angles_ip = self.ip(names, angles, 2.5)
-		self.motion_service.angleInterpolation(names, angles_ip, time_ip, True)
-		print("Wave: done moving arm to initial pos...")
+		try:
+			print("Setting up wave behavior...")
+			start_time = time.time()
+			time_elapsed = 0.0
+			names = ["LWristYaw", "LShoulderRoll", "LShoulderPitch", "LElbowRoll", "LElbowYaw", "LHand"]
+			angles = [math.radians(62.1), math.radians(30.9), math.radians(-22.9), math.radians(-52.4), math.radians(-73.1), 0.98]
+			time_ip, angles_ip = self.ip(names, angles, 4.0)
+			self.motion_service.angleInterpolation(names, angles_ip, time_ip, True)
+			print("Wave: done moving arm to initial pos...")
 
-		while time_elapsed < 12.0:
-			names = ["LWristYaw"]
-			angles = [math.radians(66.5)]
-			time_ip, angles_ip = self.ip(names, angles, 0.5)
-			self.motion_service.angleInterpolation(names, angles_ip, time_ip, True)
-			angles[0] = math.radians(-16.9)
-			time_ip, angles_ip = self.ip(names, angles, 0.5)
-			self.motion_service.angleInterpolation(names, angles_ip, time_ip, True)
-			time_elapsed = (time.time() - start_time)
-		print("Wave finished.")
+			while time_elapsed < 12.0:
+				names = ["LWristYaw"]
+				angles = [math.radians(66.5)]
+				time_ip, angles_ip = self.ip(names, angles, 2.0)
+				self.motion_service.angleInterpolation(names, angles_ip, time_ip, True)
+				angles[0] = math.radians(-16.9)
+				time_ip, angles_ip = self.ip(names, angles, 2.0)
+				self.motion_service.angleInterpolation(names, angles_ip, time_ip, True)
+				time_elapsed = (time.time() - start_time)
+			print("Wave finished.")
+		except:
+			print("Wave animation failed.")
 
 	def set_stiffness(self, val, names):
 		stiffnessLists = val

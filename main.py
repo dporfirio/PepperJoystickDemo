@@ -117,13 +117,13 @@ class Client:
                         self.update_event_ds('right', 1)
                 if event.type == pygame.JOYAXISMOTION:
                     if event.axis == 1 and event.value > 0:
-                        self.update_event_ds("velocity", -1 * event.value if event.value > 0.6 else 0.0)
+                        self.update_event_ds("velocity", -1 * event.value if event.value > 0.2 else 0.0)
                     elif event.axis == 1:
-                        self.update_event_ds("velocity", -1 * event.value if event.value < -0.6 else 0.0)
+                        self.update_event_ds("velocity", -1 * event.value if event.value < -0.2 else 0.0)
                     if event.axis == 3 and event.value > 0:
-                        self.update_event_ds("twist", event.value if event.value > 0.6 else 0.0)
+                        self.update_event_ds("twist", -1 * event.value if event.value > 0.2 else 0.0)
                     elif event.axis == 3:
-                        self.update_event_ds("twist", event.value if event.value < -0.6 else 0.0)
+                        self.update_event_ds("twist", -1 * event.value if event.value < -0.2 else 0.0)
                 elif event.type == pygame.JOYBUTTONUP:
                     if event.button == 0:
                         print("a")
